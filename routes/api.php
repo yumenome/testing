@@ -19,4 +19,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/test',[TestingController::class, 'direct_method']);
+Route::post('/dm',[TestingController::class, 'direct_method']);
+
+Route::post('/lf',[TestingController::class, 'little_friend']);
