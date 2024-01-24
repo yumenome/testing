@@ -16,8 +16,9 @@ return new class extends Migration
             $table->string('username')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
-            $table->string('forgot_code')->nullable();
+            $table->string('otp_code')->nullable();
             $table->string('password');
+            $table->timestamp('otp_expired')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

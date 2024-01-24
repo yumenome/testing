@@ -2,41 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Requests\SinginRequest;
+use App\Http\Requests\SMSRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Client;
 
 class AuthController extends Controller
 {
-    public function signin(Request $request){
+    public function signin(SinginRequest $request){
 
         try{
-
-            $validator = validator($request->all(),[
-                'name_phone' => 'required',
-                'password' => 'required',
-            ]);
-
-            if($validator->fails()) {
-                return response()->json(['messgage' => 'need to fill all required fields'],404);
-            }
-
-            if(Auth::attempt(['password' => $request->password, 'phone' => $request->name_phone]) ||
-               Auth::attempt(['password' => $request->password, 'username' => $request->name_phone])){
+            if(Auth::attempt(['password' => $request->password, 'phone' => $request->resource]) ||
+               Auth::attempt(['password' => $request->password, 'username' => $request->resource])){
 
                 $user = Auth::user();
 
                 /** @var \App\Models\User $user */
                 $token = $user->createToken($request->password . 'ATUH_TOKEN')->plainTextToken;
 
-                return response()->json(['token' => $token, 'user' => $user]);
+                return response()->json(['token' => $token, 'user' => $user],200);
             }
             else{
-                return response()->json(['message' => 'something went wrong, i can feel it!'],401);
+                return response()->json(['message' => 'invalid data!'],401);
             }
 
         }catch(Exception $e){
@@ -44,19 +37,14 @@ class AuthController extends Controller
         }
     }
 
-    public function forgot_password(Request $request){
-
-        $user = User::where('phone', $request->phone)->first();
-
-        if(!$user){
-            return response()->json(['message' => 'Could not process a user with that phone number.'], 401);
-        };
+    public function sendOTP($phone,$otp_code){
+        $user = User::where('phone', $phone)->first();
 
         $client = new Client();
 
-        $base_url = 'https://smspoh.com/api/v2/send';
-
         $token = 'ZugHBnKarsVKdlii2GBW0FcWBedUlxLmiW2c8Kdsvmr1bLF2G9AdvaThtsdRKGoV';
+
+        $base_url = 'https://smspoh.com/api/v2/send';
 
         $headers = [
             'Content-Type' => 'application/json',
@@ -64,13 +52,9 @@ class AuthController extends Controller
             "Authorization" => "Bearer " . $token,
         ];
 
-        $forgot_code = rand(111111, 999999);
-        $user->forgot_code = $forgot_code;
-        $user->save();
-
         $data = [
-            'to' => $request->phone,
-            'message' => $forgot_code .  "is your verification code for fatty application login.",
+            'to' => $phone,
+            'message' => $otp_code .  " is your OTP to change your current password, don't share with others!",
             'sender' => "abacus_mm"
         ];
 
@@ -79,12 +63,67 @@ class AuthController extends Controller
             'json' => $data,
         ]);
 
-        $response = $postResponse->getBody();
-        return $response;
+        if($postResponse->getStatusCode() == 200) {
+            $response = $postResponse->getBody();
+            return $response;
+        }
     }
 
-    public function test(){
-        sleep(5);
-        echo('testing');
+    public function sms_verification(SMSRequest $request){
+
+         if($request->otp_code == null) {
+            return response()->json(['??' => "nice try!"]);
+        }
+
+        $user = User::where('otp_code', $request->otp_code)->first();
+
+        $now = Carbon::now();
+
+        if($user && $now->isBefore($user->otp_expired)){
+            $user->update([
+                'otp_code' => null,
+            ]);
+            return response()->json(['message' => 'successfully sign-up!'], 200);
+        }
+
+        return response()->json(['error' => 'your OTP expired!'], 422);
+    }
+
+    public function forgot_password(ForgotPasswordRequest $request){
+
+        $user = User::where('phone', $request->phone)->first();
+
+        $otp_code = rand(111111, 999999);
+        $user->update([
+            'otp_code' => $otp_code,
+            'otp_expired' => Carbon::now()->addMinutes(5),
+        ]);
+
+        $result = $this->sendOTP($request->phone, $otp_code);
+
+        return $result;
+
+
+    }
+
+    public function reset_password(ResetPasswordRequest $request){
+
+        if($request->otp_code == null) {
+            return response()->json(['??' => "nice try!"]);
+        }
+
+        $user = User::where('otp_code', $request->otp_code)->first();
+
+        $now = Carbon::now();
+
+        if($user && $now->isBefore($user->otp_expired)){
+            $user->update([
+                'otp_code' => null,
+                'password' => $request->new_password,
+            ]);
+            return response()->json(['message' => 'successfully changed your password'], 200);
+        }
+
+        return response()->json(['error' => 'your OTP expired!'], 422);
     }
 }
