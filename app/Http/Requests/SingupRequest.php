@@ -6,9 +6,8 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rules\Password;
 
-class ResetPasswordRequest extends FormRequest
+class SingupRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,12 +25,12 @@ class ResetPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'otp_code' => ['required', 'exists:users,otp_code'],
-            'new_password' => [
-                'required',
-                'string',
-                'min:7',
-            ],
+            'img' => 'required|mimes:jpeg,png,jpg,pdf|dimensions:min_width=50,min_height=50|max:10240',
+            'username' => 'required|string|max: 255',
+            'phone' => 'required|string|min: 11',
+            'email' => 'string|email',
+            'password' => 'required|string|min: 7|confirmed',
+            'password_confirmation' => 'required',
         ];
     }
 
@@ -39,7 +38,6 @@ class ResetPasswordRequest extends FormRequest
     {
         throw new HttpResponseException(
             response()->json([
-                'success' => 0,
                 'code' => Response::HTTP_UNPROCESSABLE_ENTITY,
                 'meta' => [
                     'method' => $this->getMethod(),

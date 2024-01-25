@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-class ApiResponse
+class ApiHelper
 {
     public static function responseWithSuccess($message, $data=null, $token=null)
     {
@@ -44,7 +44,7 @@ class ApiResponse
         ], 404);
     }
 
-    public static function responseWithBadRequest($message="Bad Request")
+    public static function responseWithBadRequest($message)
     {
         return response()->json([
             'success'=>false,
@@ -53,15 +53,7 @@ class ApiResponse
             'data' => null
         ], 400);
     }
-    public static function responseLocked()
-    {
-        return response()->json([
-            'success'=>false,
-            'status_code' => 423,
-            'message' => 'This user have been locked',
 
-        ], 423);
-    }
     public static function serverError($message)
     {
         return response()->json([
