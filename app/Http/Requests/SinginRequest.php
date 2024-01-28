@@ -31,7 +31,6 @@ class SinginRequest extends FormRequest
                 'required',
                 'string',
                 'min:7',
-                // Password::min(y)->mixedCase()
             ],
         ];
     }
@@ -47,7 +46,7 @@ class SinginRequest extends FormRequest
                     'endpoint' => $this->path(),
                 ],
                 'data' => [
-                    'message' => 'The given data was invalid.',
+
                     'errors' => $validator->errors(),
                 ],
                 'duration' => (float)sprintf("%.3f", (microtime(true) - LARAVEL_START)),

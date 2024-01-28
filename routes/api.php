@@ -28,8 +28,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/direct_m',[TestingController::class, 'direct_method']);
+Route::post('/direct_method',[TestingController::class, 'generateDMQ']);
 
-Route::post('/little_f',[TestingController::class, 'little_friend']);
+Route::post('/little_friend',[TestingController::class, 'generateLFQ']);
 
-Route::post('/big_f',[TestingController::class, 'big_friend']);
+Route::post('/big_friend',[TestingController::class, 'generateBFQ']);
+
+Route::post('/level_1',[TestingController::class, 'generate_lv1']);
